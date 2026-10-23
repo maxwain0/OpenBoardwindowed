@@ -1,3 +1,4 @@
+```yaml
 name: Build OpenBoard for Windows
 
 on:
@@ -8,14 +9,17 @@ jobs:
     runs-on: windows-latest
 
     steps:
+      # Step 1: Download the OpenBoard source code
       - name: Download OpenBoard source
         uses: actions/checkout@v4
 
+      # Step 2: Prepare the Windows C++ compiler
       - name: Prepare MSVC
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
 
+      # Step 3: Install Qt and required modules
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
@@ -23,20 +27,55 @@ jobs:
           arch: win64_msvc2022_64
           modules: 'qtwebengine qtmultimedia qtwebchannel qtpositioning qt5compat'
 
+      # Step 4: Download OpenBoard's third-party libraries
       - name: Download third-party libraries
         shell: pwsh
         run: |
           git clone https://github.com/OpenBoard-org/OpenBoard-ThirdParty.git ../OpenBoard-ThirdParty
 
+      # Step 5: Build the QuaZip library
+      - name: Build QuaZip library
+        shell: pwsh
+        run: |
+          $quazipProject = "../OpenBoard-ThirdParty/quazip/quazip.pro"
+
+          if (!(Test-Path $quazipProject)) {
+            Write-Error "Cannot find quazip.pro in the third-party library folder."
+            Get-ChildItem "../OpenBoard-ThirdParty/quazip" -Recurse
+            exit 1
+          }
+
+          Push-Location "../OpenBoard-ThirdParty/quazip"
+          qmake quazip.pro
+          if ($LASTEXITCODE -ne 0) {
+            throw "qmake failed while preparing QuaZip."
+          }
+
+          nmake
+          if ($LASTEXITCODE -ne 0) {
+            throw "nmake failed while building QuaZip."
+          }
+          Pop-Location
+
+      # Step 6: Build OpenBoard
       - name: Build OpenBoard
         shell: pwsh
         run: |
           qmake OpenBoard.pro
-          nmake
+          if ($LASTEXITCODE -ne 0) {
+            throw "qmake failed while preparing OpenBoard."
+          }
 
+          nmake
+          if ($LASTEXITCODE -ne 0) {
+            throw "nmake failed while building OpenBoard."
+          }
+
+      # Step 7: Upload the build output
       - name: Upload build files
         uses: actions/upload-artifact@v4
         with:
           name: OpenBoard-Windows
           path: build/win32/release/product/
           if-no-files-found: error
+```
