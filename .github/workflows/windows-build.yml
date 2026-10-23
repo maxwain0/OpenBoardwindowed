@@ -21,7 +21,7 @@ jobs:
         with:
           version: '6.8.3'
           arch: win64_msvc2022_64
-          modules: 'qtwebengine qtmultimedia'
+          modules: 'modules: 'qtwebengine qtmultimedia qtwebchannel qtpositioning qt5compat'
 
       - name: Download third-party libraries
         shell: pwsh
