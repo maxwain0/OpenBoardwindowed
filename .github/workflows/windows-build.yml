@@ -1,1 +1,42 @@
+name: Build OpenBoard for Windows
 
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Download OpenBoard source
+        uses: actions/checkout@v4
+
+      - name: Prepare MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.3'
+          arch: win64_msvc2022_64
+          modules: 'qtwebengine qtmultimedia qtsvg'
+
+      - name: Download third-party libraries
+        shell: pwsh
+        run: |
+          git clone https://github.com/OpenBoard-org/OpenBoard-ThirdParty.git ../OpenBoard-ThirdParty
+
+      - name: Build OpenBoard
+        shell: pwsh
+        run: |
+          qmake OpenBoard.pro
+          nmake
+
+      - name: Upload build files
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenBoard-Windows
+          path: build/win32/release/product/
+          if-no-files-found: error
