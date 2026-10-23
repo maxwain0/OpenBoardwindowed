@@ -33,17 +33,17 @@ BEGIN
 
         BEGIN
 
-            VALUE "CompanyName",      "Open Education Foudation\000"
+            VALUE "CompanyName",      "Wain\000"
 
-            VALUE "FileDescription",  "OpenBoard\000"
+            VALUE "FileDescription",  "OpenBoard Windowed Edition\000"
 
             VALUE "FileVersion",      UBVERSION
 
-            VALUE "LegalCopyright",   "(c) Open Education Foundation 2013. All rights reserved\000"
+            VALUE "LegalCopyright",   "(c) wain 2026. All rights reserved\000"
 
             VALUE "OriginalFilename", "OpenBoard.exe\000"
 
-            VALUE "ProductName",      "OpenBoard\000"
+            VALUE "ProductName",      "OpenBoard Windowed Edition\000"
 
             VALUE "ProductVersion",   UBVERSION
 
