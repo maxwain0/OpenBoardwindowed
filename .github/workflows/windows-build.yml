@@ -34,19 +34,17 @@ jobs:
           $project = "../OpenBoard-ThirdParty/quazip/quazip.pro"
 
           if (!(Test-Path $project)) {
-            Write-Error "QuaZip project file was not found."
-            exit 1
+            throw "QuaZip project file was not found."
           }
 
           Push-Location "../OpenBoard-ThirdParty/quazip"
-          qmake quazip.pro
 
+          qmake quazip.pro
           if ($LASTEXITCODE -ne 0) {
             throw "QuaZip qmake failed."
           }
 
           nmake
-
           if ($LASTEXITCODE -ne 0) {
             throw "QuaZip build failed."
           }
@@ -57,18 +55,82 @@ jobs:
         shell: pwsh
         run: |
           qmake OpenBoard.pro
-
           if ($LASTEXITCODE -ne 0) {
             throw "OpenBoard qmake failed."
           }
 
           nmake
-
           if ($LASTEXITCODE -ne 0) {
             throw "OpenBoard build failed."
           }
 
-      - name: Upload build files
+      - name: Deploy Qt runtime files
+        shell: pwsh
+        run: |
+          $product = "build/win32/release/product"
+          $exe = Join-Path $product "OpenBoard.exe"
+
+          if (!(Test-Path $exe)) {
+            throw "OpenBoard.exe was not found at $exe"
+          }
+
+          windeployqt --release --compiler-runtime --qmldir src $exe
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "Qt deployment failed."
+          }
+
+      - name: Copy OpenBoard third-party DLLs
+        shell: pwsh
+        run: |
+          $product = "build/win32/release/product"
+
+          $dllFolders = @(
+            "../OpenBoard-ThirdParty/poppler/bin",
+            "../OpenBoard-ThirdParty/openssl/openssl-3.0.15-win64/bin",
+            "../OpenBoard-ThirdParty/zlib/1.2.11/bin"
+          )
+
+          foreach ($folder in $dllFolders) {
+            if (!(Test-Path $folder)) {
+              throw "Required DLL folder was not found: $folder"
+            }
+
+            $dlls = Get-ChildItem -Path $folder -Filter "*.dll" -File
+
+            if ($dlls.Count -eq 0) {
+              throw "No DLL files were found in: $folder"
+            }
+
+            Copy-Item -Path "$folder/*.dll" -Destination $product -Force
+
+            Write-Host "Copied DLL files from $folder"
+          }
+
+      - name: Verify required DLLs
+        shell: pwsh
+        run: |
+          $product = "build/win32/release/product"
+
+          $required = @(
+            "OpenBoard.exe",
+            "zlib.dll",
+            "libcrypto-3-x64.dll",
+            "poppler.dll",
+            "Qt6SvgWidgets.dll"
+          )
+
+          foreach ($file in $required) {
+            $path = Join-Path $product $file
+
+            if (!(Test-Path $path)) {
+              throw "Required file is missing: $file"
+            }
+
+            Write-Host "Found: $file"
+          }
+
+      - name: Upload Windows application
         uses: actions/upload-artifact@v4
         with:
           name: OpenBoard-Windows
